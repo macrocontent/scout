@@ -1,0 +1,21 @@
+name: GraphQL Make Public
+on:
+  workflow_dispatch:
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: GraphQL
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -x
+          gh api graphql -f query='
+            query {
+              organization(login: "macrocontent") {
+                packages(first: 20, packageType: DOCKER) {
+                  nodes { id name packageType }
+                }
+              }
+            }'
