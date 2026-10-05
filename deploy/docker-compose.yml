@@ -1,0 +1,37 @@
+# Scout Self-Hosted — copy to your server as docker-compose.yml
+# Image placeholder __SCOUT_IMAGE__ is replaced in the deploy bundle from the console.
+
+services:
+  scout-api:
+    image: __SCOUT_IMAGE__
+    restart: unless-stopped
+    ports:
+      - "${SCOUT_PORT:-3009}:3009"
+    env_file:
+      - .env
+    environment:
+      SCOUT_DEPLOYMENT_MODE: self_hosted
+      SCOUT_PORT: 3009
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3009/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
