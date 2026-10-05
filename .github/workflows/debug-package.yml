@@ -1,0 +1,29 @@
+name: Debug Package Visibility
+on:
+  workflow_dispatch:
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Inspect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          echo "actor=$GITHUB_ACTOR repo=$GITHUB_REPOSITORY"
+          echo "=== org GET scout ==="
+          gh api /orgs/macrocontent/packages/container/scout -i
+          echo "=== org list all visibilities ==="
+          for v in private public internal; do
+            echo "-- $v --"
+            gh api "/orgs/macrocontent/packages?package_type=container&visibility=$v" --jq '.[].name'
+          done
+          echo "=== repo packages ==="
+          gh api /repos/macrocontent/scout/packages?package_type=container --jq .
+          echo "=== PATCH ==="
+          gh api --method PATCH /orgs/macrocontent/packages/container/scout -f visibility=public -i
+          echo "=== GET after ==="
+          gh api /orgs/macrocontent/packages/container/scout --jq '{name,visibility,repository:.repository.full_name,owner:.owner.login}'
