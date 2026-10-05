@@ -6,15 +6,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
-      - name: Set public
+      - name: Set public (API often 404 — UI fallback)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -x
-          gh api /orgs/macrocontent/packages/container/scout --jq '{visibility,repository:.repository.full_name}'
+          set +e
+          echo "Current: $(gh api /orgs/macrocontent/packages/container/scout --jq .visibility)"
           echo '{"visibility":"public"}' | gh api --method PATCH \
             -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /orgs/macrocontent/packages/container/scout \
-            --input -
-          gh api /orgs/macrocontent/packages/container/scout --jq .visibility
+            /orgs/macrocontent/packages/container/scout --input -
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "::warning::API cannot set visibility (HTTP 404). Open https://github.com/orgs/macrocontent/packages/container/package/scout → Package settings → Change visibility → Public"
+            exit 0
+          fi
+          echo "Now: $(gh api /orgs/macrocontent/packages/container/scout --jq .visibility)"
